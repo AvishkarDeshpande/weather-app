@@ -1,65 +1,262 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
+import ErrorMessage from '@/components/ErrorMessage';
+import SkeletonLoader from '@/components/SkeletonLoader';
+import WeatherCard from '@/components/WeatherCard';
+import ForecastCard from '@/components/ForecastCard';
+import CitiesTable from '@/components/CitiesTable';
+import { 
+  WeatherData, 
+  ForecastDay, 
+  CityWeather, 
+  TemperatureUnit 
+} from '@/types/weather.types';
+import { convertTemperature, generateMockCitiesData } from '@/utils/weatherHelpers';
+
+const WeatherApp: React.FC = () => {
+  // State Management
+  const [city, setCity] = useState<string>('');
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<ForecastDay[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [unit, setUnit] = useState<TemperatureUnit>('C');
+  const [citiesData, setCitiesData] = useState<CityWeather[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  
+  const itemsPerPage = 5;
+  const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || 'demo';
+
+  // Initialize on mount
+  useEffect(() => {
+    getUserLocation();
+    setCitiesData(generateMockCitiesData());
+  }, []);
+
+  /**
+   * Get user's current location using Geolocation API
+   */
+  const getUserLocation = (): void => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchWeatherByCoords(position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          // Fallback to default city if location access denied
+          fetchWeather('London');
+        }
+      );
+    } else {
+      fetchWeather('London');
+    }
+  };
+
+  /**
+   * Fetch weather data by coordinates
+   */
+  const fetchWeatherByCoords = async (lat: number, lon: number): Promise<void> => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // REAL API CALL (uncomment when you have API key):
+      // const response = await fetch(
+      //   `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+      // );
+      // const data = await response.json();
+      // 
+      // const forecastResponse = await fetch(
+      //   `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+      // );
+      // const forecastData = await forecastResponse.json();
+      //
+      // Process real data here...
+
+      // MOCK DATA (for demo purposes)
+      const mockWeather: WeatherData = {
+        city: 'Your Location',
+        temp: 22,
+        condition: 'Clear',
+        humidity: 65,
+        windSpeed: 12,
+        icon: '01d',
+        feelsLike: 21,
+        tempMin: 18,
+        tempMax: 25
+      };
+
+      const mockForecast: ForecastDay[] = [
+        { date: 'Mon', temp: 23, condition: 'Sunny', icon: '01d', humidity: 60 },
+        { date: 'Tue', temp: 21, condition: 'Cloudy', icon: '02d', humidity: 65 },
+        { date: 'Wed', temp: 19, condition: 'Rainy', icon: '10d', humidity: 80 },
+        { date: 'Thu', temp: 22, condition: 'Clear', icon: '01d', humidity: 55 },
+        { date: 'Fri', temp: 24, condition: 'Sunny', icon: '01d', humidity: 50 }
+      ];
+
+      setWeather(mockWeather);
+      setForecast(mockForecast);
+    } catch (err) {
+      setError('Failed to fetch weather data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Fetch weather data by city name
+   */
+  const fetchWeather = async (cityName: string): Promise<void> => {
+    if (!cityName.trim()) {
+      setError('Please enter a city name');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // REAL API CALL (uncomment when you have API key):
+      // const response = await fetch(
+      //   `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${API_KEY}&units=metric`
+      // );
+      // 
+      // if (!response.ok) {
+      //   throw new Error('City not found');
+      // }
+      // 
+      // const data = await response.json();
+      // 
+      // const forecastResponse = await fetch(
+      //   `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&appid=${API_KEY}&units=metric`
+      // );
+      // const forecastData = await forecastResponse.json();
+      //
+      // Process real data here...
+
+      // MOCK DATA (for demo purposes)
+      const mockWeather: WeatherData = {
+        city: cityName,
+        temp: Math.floor(Math.random() * 30) + 10,
+        condition: ['Clear', 'Cloudy', 'Rainy', 'Sunny'][Math.floor(Math.random() * 4)],
+        humidity: Math.floor(Math.random() * 60) + 30,
+        windSpeed: Math.floor(Math.random() * 20) + 5,
+        icon: '01d',
+        feelsLike: Math.floor(Math.random() * 30) + 10,
+        tempMin: Math.floor(Math.random() * 20) + 5,
+        tempMax: Math.floor(Math.random() * 35) + 15
+      };
+
+      const mockForecast: ForecastDay[] = [
+        { date: 'Mon', temp: 23, condition: 'Sunny', icon: '01d', humidity: 60 },
+        { date: 'Tue', temp: 21, condition: 'Cloudy', icon: '02d', humidity: 65 },
+        { date: 'Wed', temp: 19, condition: 'Rainy', icon: '10d', humidity: 80 },
+        { date: 'Thu', temp: 22, condition: 'Clear', icon: '01d', humidity: 55 },
+        { date: 'Fri', temp: 24, condition: 'Sunny', icon: '01d', humidity: 50 }
+      ];
+
+      setWeather(mockWeather);
+      setForecast(mockForecast);
+    } catch (err) {
+      setError('City not found. Please try again.');
+      setWeather(null);
+      setForecast([]);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Handle search button click
+   */
+  const handleSearch = (): void => {
+    fetchWeather(city);
+  };
+
+  /**
+   * Toggle dark/light mode
+   */
+  const toggleDarkMode = (): void => {
+    setDarkMode(!darkMode);
+  };
+
+  /**
+   * Toggle temperature unit (C/F)
+   */
+  const toggleUnit = (): void => {
+    setUnit(unit === 'C' ? 'F' : 'C');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600'
+    }`}>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header with dark mode and unit toggle */}
+        <Header
+          darkMode={darkMode}
+          unit={unit}
+          onToggleDarkMode={toggleDarkMode}
+          onToggleUnit={toggleUnit}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        {/* Search bar */}
+        <SearchBar
+          city={city}
+          onCityChange={setCity}
+          onSearch={handleSearch}
+          loading={loading}
+          darkMode={darkMode}
+        />
+
+        {/* Error message */}
+        {error && <ErrorMessage message={error} darkMode={darkMode} />}
+
+        {/* Weather card with loading state */}
+        {loading ? (
+          <div className={`p-8 rounded-2xl shadow-2xl mb-8 ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <SkeletonLoader darkMode={darkMode} />
+          </div>
+        ) : weather ? (
+          <WeatherCard
+            weather={weather}
+            unit={unit}
+            darkMode={darkMode}
+            onConvertTemp={(temp) => convertTemperature(temp, unit)}
+          />
+        ) : null}
+
+        {/* 5-day forecast */}
+        {forecast.length > 0 && (
+          <ForecastCard
+            forecast={forecast}
+            unit={unit}
+            darkMode={darkMode}
+            onConvertTemp={(temp) => convertTemperature(temp, unit)}
+          />
+        )}
+
+        {/* Cities table with pagination */}
+        <CitiesTable
+          cities={citiesData}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          unit={unit}
+          darkMode={darkMode}
+          onPageChange={setCurrentPage}
+          onConvertTemp={(temp) => convertTemperature(temp, unit)}
+        />
+      </div>
     </div>
   );
-}
+};
+
+export default WeatherApp;
