@@ -11,9 +11,9 @@ export const convertTemperature = (temp: number, unit: TemperatureUnit): number 
 /**
  * Get appropriate weather icon based on condition
  */
-export const getWeatherIcon = (condition: string): JSX.Element => {
+export const getWeatherIcon = (condition: string): React.ReactNode => {
   const iconClass = "w-16 h-16";
-  
+
   switch (condition.toLowerCase()) {
     case 'clear':
     case 'sunny':
